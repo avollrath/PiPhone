@@ -1,6 +1,7 @@
 import argparse
 import json
 import random
+import signal
 import shutil
 import subprocess
 import sys
@@ -43,6 +44,9 @@ class HandsetSwitch:
             self.button.wait_for_press()
         else:
             self.button.wait_for_release()
+
+    def close(self) -> None:
+        self.button.close()
 
 
 class PlaybackState:
@@ -216,6 +220,10 @@ def create_handset_switch(
     )
 
 
+def stop_on_signal(_signal_number, _frame) -> None:
+    raise KeyboardInterrupt
+
+
 def play_handset_mode(
     poems: list[Poem],
     state: PlaybackState,
@@ -231,7 +239,6 @@ def play_handset_mode(
         handset_switch.wait_for_lift()
 
         print_poem(poem)
-        state.mark_played(poem.poem_id)
         try:
             play_until_handset_down(
                 poem,
@@ -242,7 +249,11 @@ def play_handset_mode(
                 telephone_effect=telephone_effect,
             )
         except subprocess.CalledProcessError as error:
-            print(f"mpg123 failed with exit code {error.returncode}")
+            print(f"Skipping unreadable audio file: {poem.audio_path}")
+            print(f"Player failed with exit code {error.returncode}")
+            state.mark_played(poem.poem_id)
+        else:
+            state.mark_played(poem.poem_id)
 
         if handset_switch.is_lifted:
             handset_switch.wait_for_down()
@@ -280,7 +291,7 @@ def play_standard_mode(
                     check=True,
                 )
             except subprocess.CalledProcessError as error:
-                print(f"mpg123 failed with exit code {error.returncode}")
+                print(f"Player failed with exit code {error.returncode}")
 
         played_this_run += 1
         if not repeat and all(poem.poem_id in state.played_ids for poem in poems):
@@ -368,15 +379,24 @@ def main() -> int:
             print("gpiozero is not installed. Run: sudo apt install python3-gpiozero")
             return 1
 
-        play_handset_mode(
-            poems,
-            state,
-            handset_switch,
-            quiet=not args.player_verbose,
-            audio_device=args.audio_device,
-            volume_percent=args.volume,
-            telephone_effect=args.telephone_effect,
-        )
+        signal.signal(signal.SIGTERM, stop_on_signal)
+        if hasattr(signal, "SIGTSTP"):
+            signal.signal(signal.SIGTSTP, stop_on_signal)
+
+        try:
+            play_handset_mode(
+                poems,
+                state,
+                handset_switch,
+                quiet=not args.player_verbose,
+                audio_device=args.audio_device,
+                volume_percent=args.volume,
+                telephone_effect=args.telephone_effect,
+            )
+        except KeyboardInterrupt:
+            print("\nStopping.", flush=True)
+        finally:
+            handset_switch.close()
         return 0
 
     play_standard_mode(
