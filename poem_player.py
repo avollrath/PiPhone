@@ -150,7 +150,7 @@ def build_player_command(
                 "sudo apt install sox libsox-fmt-mp3"
             )
 
-        command = ["sox", "--buffer", "256"]
+        command = ["sox"]
         if quiet:
             command.append("-q")
         if volume_percent is not None:
