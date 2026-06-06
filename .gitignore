@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.py[cod]
+*.log
+poems/
+.playback-state.json
+*.part
