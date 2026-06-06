@@ -220,6 +220,14 @@ def create_handset_switch(
     )
 
 
+def create_status_led(gpio_pin: int):
+    from gpiozero import LED
+
+    led = LED(gpio_pin)
+    led.off()
+    return led
+
+
 def stop_on_signal(_signal_number, _frame) -> None:
     raise KeyboardInterrupt
 
@@ -329,6 +337,13 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="switch is closed while handset is down",
     )
+    parser.add_argument(
+        "--status-led-gpio",
+        type=int,
+        default=27,
+        help="BCM GPIO pin for ready LED",
+    )
+    parser.add_argument("--no-status-led", action="store_true", help="disable ready LED")
     parser.add_argument("--min-words", type=int, help="skip poems shorter than this word count")
     parser.add_argument("--max-words", type=int, help="skip poems longer than this word count")
     translation_group = parser.add_mutually_exclusive_group()
@@ -368,6 +383,17 @@ def main() -> int:
     if args.reset_played:
         state.reset()
 
+    status_led = None
+    if not args.no_status_led:
+        try:
+            status_led = create_status_led(args.status_led_gpio)
+        except ImportError:
+            print("gpiozero is not installed. Run: sudo apt install python3-gpiozero")
+            return 1
+        except Exception as error:
+            print(f"Could not initialize status LED on GPIO{args.status_led_gpio}: {error}")
+            return 1
+
     if not args.no_handset:
         try:
             handset_switch = create_handset_switch(
@@ -377,8 +403,12 @@ def main() -> int:
             )
         except ImportError:
             print("gpiozero is not installed. Run: sudo apt install python3-gpiozero")
+            if status_led:
+                status_led.close()
             return 1
         except Exception as error:
+            if status_led:
+                status_led.close()
             if "GPIO busy" in str(error):
                 print(
                     f"GPIO{args.handset_gpio} is busy. "
@@ -392,6 +422,8 @@ def main() -> int:
         if hasattr(signal, "SIGTSTP"):
             signal.signal(signal.SIGTSTP, stop_on_signal)
 
+        if status_led:
+            status_led.on()
         try:
             play_handset_mode(
                 poems,
@@ -405,20 +437,30 @@ def main() -> int:
         except KeyboardInterrupt:
             print("\nStopping.", flush=True)
         finally:
+            if status_led:
+                status_led.off()
+                status_led.close()
             handset_switch.close()
         return 0
 
-    play_standard_mode(
-        poems,
-        state,
-        repeat=args.repeat,
-        limit=args.limit,
-        dry_run=args.dry_run,
-        quiet=not args.player_verbose,
-        audio_device=args.audio_device,
-        volume_percent=args.volume,
-        telephone_effect=args.telephone_effect,
-    )
+    if status_led:
+        status_led.on()
+    try:
+        play_standard_mode(
+            poems,
+            state,
+            repeat=args.repeat,
+            limit=args.limit,
+            dry_run=args.dry_run,
+            quiet=not args.player_verbose,
+            audio_device=args.audio_device,
+            volume_percent=args.volume,
+            telephone_effect=args.telephone_effect,
+        )
+    finally:
+        if status_led:
+            status_led.off()
+            status_led.close()
     return 0
 
 

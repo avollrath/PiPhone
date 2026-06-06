@@ -17,9 +17,11 @@ Example wiring:
 
 - Hook switch contact: BCM GPIO 17, physical pin 11
 - Other hook switch contact: GND, physical pin 9
+- Status LED anode through 220 ohm resistor: BCM GPIO 27, physical pin 13
+- Status LED cathode: GND
 
 The default configuration uses `poems/`, BCM GPIO 17, an inverted hook switch,
-telephone audio processing, and 20% volume:
+telephone audio processing, 20% volume, and a ready LED on BCM GPIO 27:
 
 ```bash
 python3 poem_player.py
@@ -40,10 +42,15 @@ Useful options:
 --player-verbose
 --no-telephone-effect
 --no-handset
+--status-led-gpio 27
+--no-status-led
 ```
 
 `--telephone-effect` uses SoX to restrict playback to 300-3400 Hz and resample
 to 8 kHz, approximating traditional telephone audio.
+
+The status LED remains off during startup, turns on when the player is ready
+for handset lifts, and turns off when the process stops.
 
 Playback progress is stored in `poems/.playback-state.json` by default.
 Deleting that file or using `--reset-played` starts a new cycle.
