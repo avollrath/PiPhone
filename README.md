@@ -1,12 +1,13 @@
 # PiPhone
 
 Rotary-phone audio player for a Raspberry Pi. Lifting the handset starts a
-random local poem. Replacing it stops playback. Played poems are persisted so
-each poem is selected once before a new random cycle begins.
+random local audio file. Replacing it stops playback. Playback history is
+persisted so each audio file is selected once before a new random cycle begins.
 
 ## Pi Setup
 
-Copy `poem_player.py` and downloaded `poems/` directory to the Pi.
+Copy `poem_player.py` and the downloaded audio directory (`poems/` by default)
+to the Pi.
 
 ```bash
 sudo apt update
@@ -61,7 +62,7 @@ Create `/etc/systemd/system/poem-player.service`:
 
 ```ini
 [Unit]
-Description=PiPhone poem player
+Description=PiPhone audio player
 After=local-fs.target sound.target
 
 [Service]
@@ -96,7 +97,7 @@ python3 poem_player.py
 sudo systemctl start poem-player.service
 ```
 
-## Downloading Poems
+## Downloading Audio Files
 
 Downloading is separate from Pi playback. It can run on another computer, then
 the resulting directory can be copied to the Pi.
@@ -106,8 +107,8 @@ python -m pip install -r requirements-downloader.txt
 cp .env.example .env
 ```
 
-Configure `.env` for a compatible search API and poem site. The downloader
-expects an Algolia-style multi-query response containing
+Configure `.env` for a compatible search API and audio source site. The
+downloader expects an Algolia-style multi-query response containing
 `results[0].hits`. Endpoint, credentials, index, query parameters, response
 field names, page base URL, audio selector, and fallback audio URL regex are
 all configured through `POEM_*` environment variables.
@@ -120,7 +121,7 @@ python poem_downloader.py --output-dir poems --max-words 100
 
 Existing manifest entries are skipped by ID or page URL. Each successful
 download is added to `manifest.json` immediately, so interrupted runs resume
-without downloading completed poems again.
+without downloading completed audio files again.
 
 Test configuration without downloading:
 
