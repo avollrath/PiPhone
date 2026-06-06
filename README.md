@@ -78,6 +78,15 @@ sudo systemctl enable --now poem-player.service
 sudo journalctl -u poem-player.service -f
 ```
 
+Stop the service before running the player manually, otherwise both processes
+will compete for the same GPIO:
+
+```bash
+sudo systemctl stop poem-player.service
+python3 poem_player.py
+sudo systemctl start poem-player.service
+```
+
 ## Downloading Poems
 
 Downloading is separate from Pi playback. It can run on another computer, then

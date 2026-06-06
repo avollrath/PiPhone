@@ -378,6 +378,15 @@ def main() -> int:
         except ImportError:
             print("gpiozero is not installed. Run: sudo apt install python3-gpiozero")
             return 1
+        except Exception as error:
+            if "GPIO busy" in str(error):
+                print(
+                    f"GPIO{args.handset_gpio} is busy. "
+                    "Stop the running service before manual testing:"
+                )
+                print("sudo systemctl stop poem-player.service")
+                return 1
+            raise
 
         signal.signal(signal.SIGTERM, stop_on_signal)
         if hasattr(signal, "SIGTSTP"):
