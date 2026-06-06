@@ -10,7 +10,7 @@ Copy `poem_player.py` and downloaded `poems/` directory to the Pi.
 
 ```bash
 sudo apt update
-sudo apt install -y mpg123 python3-gpiozero
+sudo apt install -y mpg123 python3-gpiozero sox libsox-fmt-mp3
 ```
 
 Example wiring:
@@ -25,6 +25,7 @@ python3 poem_player.py \
   --local-dir poems \
   --handset-gpio 17 \
   --handset-inverted \
+  --telephone-effect \
   --volume 70
 ```
 
@@ -41,7 +42,11 @@ Useful options:
 --reset-played
 --audio-device default
 --player-verbose
+--telephone-effect
 ```
+
+`--telephone-effect` uses SoX to restrict playback to 300-3400 Hz and resample
+to 8 kHz, approximating traditional telephone audio.
 
 Playback progress is stored in `poems/.playback-state.json` by default.
 Deleting that file or using `--reset-played` starts a new cycle.
@@ -59,7 +64,7 @@ After=local-fs.target sound.target
 Type=simple
 User=admin
 WorkingDirectory=/home/admin
-ExecStart=/usr/bin/python3 /home/admin/poem_player.py --local-dir /home/admin/poems --handset-gpio 17 --handset-inverted --volume 70
+ExecStart=/usr/bin/python3 /home/admin/poem_player.py --local-dir /home/admin/poems --handset-gpio 17 --handset-inverted --telephone-effect --volume 70
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1

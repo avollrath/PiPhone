@@ -137,7 +137,25 @@ def build_player_command(
     quiet: bool = True,
     audio_device: str | None = None,
     volume_percent: int | None = None,
+    telephone_effect: bool = False,
 ) -> list[str]:
+    if telephone_effect:
+        if not shutil.which("sox"):
+            raise RuntimeError(
+                "sox is not installed. Run: "
+                "sudo apt install sox libsox-fmt-mp3"
+            )
+
+        command = ["sox"]
+        if quiet:
+            command.append("-q")
+        if volume_percent is not None:
+            command.extend(["-v", str(volume_percent / 100)])
+        command.append(str(audio_path))
+        command.extend(["-t", "alsa", audio_device or "default"])
+        command.extend(["highpass", "300", "lowpass", "3400", "rate", "8000"])
+        return command
+
     if not shutil.which("mpg123"):
         raise RuntimeError("mpg123 is not installed. Run: sudo apt install mpg123")
 
@@ -158,6 +176,7 @@ def play_until_handset_down(
     quiet: bool,
     audio_device: str | None,
     volume_percent: int | None,
+    telephone_effect: bool,
 ) -> None:
     process = subprocess.Popen(
         build_player_command(
@@ -165,6 +184,7 @@ def play_until_handset_down(
             quiet=quiet,
             audio_device=audio_device,
             volume_percent=volume_percent,
+            telephone_effect=telephone_effect,
         )
     )
     while process.poll() is None:
@@ -207,6 +227,7 @@ def play_handset_mode(
     quiet: bool,
     audio_device: str | None,
     volume_percent: int | None,
+    telephone_effect: bool,
 ) -> None:
     while True:
         poem = choose_unplayed_poem(poems, state)
@@ -222,6 +243,7 @@ def play_handset_mode(
                 quiet=quiet,
                 audio_device=audio_device,
                 volume_percent=volume_percent,
+                telephone_effect=telephone_effect,
             )
         except subprocess.CalledProcessError as error:
             print(f"mpg123 failed with exit code {error.returncode}")
@@ -239,6 +261,7 @@ def play_standard_mode(
     quiet: bool,
     audio_device: str | None,
     volume_percent: int | None,
+    telephone_effect: bool,
 ) -> None:
     played_this_run = 0
     while limit is None or played_this_run < limit:
@@ -256,6 +279,7 @@ def play_standard_mode(
                         quiet=quiet,
                         audio_device=audio_device,
                         volume_percent=volume_percent,
+                        telephone_effect=telephone_effect,
                     ),
                     check=True,
                 )
@@ -277,7 +301,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true", help="print local audio paths without playing")
     parser.add_argument("--player-verbose", action="store_true", help="show mpg123 output")
     parser.add_argument("--audio-device", help="ALSA device, for example default or plughw:0,0")
-    parser.add_argument("--volume", type=int, help="mpg123 playback volume percent")
+    parser.add_argument("--volume", type=int, help="playback volume percent")
+    parser.add_argument(
+        "--telephone-effect",
+        action="store_true",
+        help="band-limit audio to 300-3400 Hz and resample to 8 kHz using SoX",
+    )
     parser.add_argument("--handset-gpio", type=int, help="BCM GPIO pin connected to handset hook switch")
     parser.add_argument("--handset-active-high", action="store_true", help="configure GPIO with pull-down")
     parser.add_argument("--handset-inverted", action="store_true", help="switch is closed while handset is down")
@@ -338,6 +367,7 @@ def main() -> int:
             quiet=not args.player_verbose,
             audio_device=args.audio_device,
             volume_percent=args.volume,
+            telephone_effect=args.telephone_effect,
         )
         return 0
 
@@ -350,6 +380,7 @@ def main() -> int:
         quiet=not args.player_verbose,
         audio_device=args.audio_device,
         volume_percent=args.volume,
+        telephone_effect=args.telephone_effect,
     )
     return 0
 
