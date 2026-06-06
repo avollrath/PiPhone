@@ -301,15 +301,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true", help="print local audio paths without playing")
     parser.add_argument("--player-verbose", action="store_true", help="show mpg123 output")
     parser.add_argument("--audio-device", help="ALSA device, for example default or plughw:0,0")
-    parser.add_argument("--volume", type=int, help="playback volume percent")
+    parser.add_argument("--volume", type=int, default=20, help="playback volume percent")
     parser.add_argument(
         "--telephone-effect",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help="band-limit audio to 300-3400 Hz and resample to 8 kHz using SoX",
     )
-    parser.add_argument("--handset-gpio", type=int, help="BCM GPIO pin connected to handset hook switch")
+    parser.add_argument(
+        "--handset-gpio",
+        type=int,
+        default=17,
+        help="BCM GPIO pin connected to handset hook switch",
+    )
+    parser.add_argument("--no-handset", action="store_true", help="play without the handset switch")
     parser.add_argument("--handset-active-high", action="store_true", help="configure GPIO with pull-down")
-    parser.add_argument("--handset-inverted", action="store_true", help="switch is closed while handset is down")
+    parser.add_argument(
+        "--handset-inverted",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="switch is closed while handset is down",
+    )
     parser.add_argument("--min-words", type=int, help="skip poems shorter than this word count")
     parser.add_argument("--max-words", type=int, help="skip poems longer than this word count")
     translation_group = parser.add_mutually_exclusive_group()
@@ -349,7 +361,7 @@ def main() -> int:
     if args.reset_played:
         state.reset()
 
-    if args.handset_gpio is not None:
+    if not args.no_handset:
         try:
             handset_switch = create_handset_switch(
                 args.handset_gpio,

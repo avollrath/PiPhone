@@ -18,19 +18,15 @@ Example wiring:
 - Hook switch contact: BCM GPIO 17, physical pin 11
 - Other hook switch contact: GND, physical pin 9
 
-Run:
+The default configuration uses `poems/`, BCM GPIO 17, an inverted hook switch,
+telephone audio processing, and 20% volume:
 
 ```bash
-python3 poem_player.py \
-  --local-dir poems \
-  --handset-gpio 17 \
-  --handset-inverted \
-  --telephone-effect \
-  --volume 70
+python3 poem_player.py
 ```
 
 `--handset-inverted` is for a hook switch that closes while the handset is
-down. Omit it when the switch closes while lifted.
+down. Use `--no-handset-inverted` when the switch closes while lifted.
 
 Useful options:
 
@@ -42,7 +38,8 @@ Useful options:
 --reset-played
 --audio-device default
 --player-verbose
---telephone-effect
+--no-telephone-effect
+--no-handset
 ```
 
 `--telephone-effect` uses SoX to restrict playback to 300-3400 Hz and resample
@@ -64,7 +61,7 @@ After=local-fs.target sound.target
 Type=simple
 User=admin
 WorkingDirectory=/home/admin
-ExecStart=/usr/bin/python3 /home/admin/poem_player.py --local-dir /home/admin/poems --handset-gpio 17 --handset-inverted --telephone-effect --volume 70
+ExecStart=/usr/bin/python3 /home/admin/poem_player.py --local-dir /home/admin/poems
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
