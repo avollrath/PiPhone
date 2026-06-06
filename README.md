@@ -60,8 +60,10 @@ After=local-fs.target sound.target
 [Service]
 Type=simple
 User=admin
+SupplementaryGroups=audio gpio
 WorkingDirectory=/home/admin
-ExecStart=/usr/bin/python3 /home/admin/poem_player.py --local-dir /home/admin/poems
+ExecStartPre=/bin/sh -c 'until /usr/bin/aplay -l 2>/dev/null | /usr/bin/grep -q sndrpihifiberry; do sleep 1; done'
+ExecStart=/usr/bin/python3 /home/admin/poem_player.py --local-dir /home/admin/poems --audio-device plughw:CARD=sndrpihifiberry,DEV=0
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
