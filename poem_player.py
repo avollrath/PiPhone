@@ -146,7 +146,7 @@ def build_player_command(
                 "sudo apt install sox libsox-fmt-mp3"
             )
 
-        command = ["sox"]
+        command = ["sox", "--buffer", "256"]
         if quiet:
             command.append("-q")
         if volume_percent is not None:
@@ -189,14 +189,10 @@ def play_until_handset_down(
     )
     while process.poll() is None:
         if not handset_switch.is_lifted:
-            process.terminate()
-            try:
-                process.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+            process.kill()
+            process.wait()
             return
-        time.sleep(0.1)
+        time.sleep(0.02)
 
     if process.returncode:
         raise subprocess.CalledProcessError(process.returncode, process.args)
@@ -215,7 +211,7 @@ def create_handset_switch(
     from gpiozero import Button
 
     return HandsetSwitch(
-        button=Button(gpio_pin, pull_up=active_low, bounce_time=0.05),
+        button=Button(gpio_pin, pull_up=active_low, bounce_time=0.02),
         inverted=inverted,
     )
 
